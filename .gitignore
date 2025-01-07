@@ -1,0 +1,4 @@
+DOCKER_DOCS/
+node_modules/*
+package-lock.json
+.env
