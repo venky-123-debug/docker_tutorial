@@ -37,7 +37,7 @@ const home = async () => {
      await mongoose.connect(process.env.MONGODB_URL,)
       console.log("Connected to MongoDB")
     } catch (e) {
-      console.error("Failed to connect to MongoDB", e)
+      throw "Failed to connect to MongoDB"
     }
     // Start the server
     app.listen(port, () => {

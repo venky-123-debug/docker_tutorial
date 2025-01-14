@@ -35,11 +35,11 @@ ls
 nano Dockerfile
 
 # Sample Dockerfile Content:
-# FROM node:18
-# WORKDIR /app
-# COPY dist/server-pkg .
-# EXPOSE 3000
-# CMD ["./server-pkg"]
+FROM node:18
+WORKDIR /app
+COPY dist/server-pkg .
+EXPOSE 3000
+CMD ["./server-pkg"]
 
 # Build Docker Image for Node.js Application
 docker build -t nodejs-app:1.0 .
