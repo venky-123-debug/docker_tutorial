@@ -31,19 +31,22 @@ app.get("/users", async (req, res) => {
 
 const home = async () => {
   try {
-    // Connect to MongoDB
-    mongoose.connect(process.env.MONGODB_URL, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
+    
+    try {
+      // Connect to MongoDB
+     await mongoose.connect(process.env.MONGODB_URL,)
+      console.log("Connected to MongoDB")
+    } catch (e) {
+      console.error("Failed to connect to MongoDB", e)
+    }
+    // Start the server
+    app.listen(port, () => {
+      console.log(`Server is running on port ${port}`)
     })
-    console.log("Connected to MongoDB")
-  } catch (e) {
-    console.error("Failed to connect to MongoDB", e)
+  } catch (error) {
+    console.error(error);
+    
   }
-  // Start the server
-  app.listen(port, () => {
-    console.log(`Server is running on port ${port}`)
-  })
 }
 
 home()
