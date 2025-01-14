@@ -1,4 +1,4 @@
-DOCKER_DOCS/
+# DOCKER_DOCS/
 node_modules/*
 package-lock.json
 .env
