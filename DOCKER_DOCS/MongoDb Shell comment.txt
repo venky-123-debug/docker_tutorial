@@ -1,0 +1,211 @@
+MongoDb Shell comment
+and
+Aggregation
+
+- show dbs
+- use dbs name
+- show collections
+
+
+FIND
+
+   - db.collectionName.find()
+
+
+CREATE
+
+   - db.collectionName.insertOne()
+   - db.collectionName.insertMany()
+  
+UPDATE
+
+   - db.collectionName.updateOne()
+   - db.collectionName.updateMany()
+
+DELETE
+
+   - db.collectioName.deleteOne()
+   - db.collectionName.deleteMany()
+
+Drop Collections
+
+   - db.collectionName.drop()
+
+Drop Database
+
+   - db.dropDatabase()
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Mongodb Aggregation
+
+-  db.collectionName.aggregate([{stage1},{stage2} ... {stageN}])
+
+
+Aggregation Stage
+ expression --> key
+stage operator = Match,Group,Project,Sort,count,limit,skip,out
+
+- $match --->  {$match:{age :{$gt : 20}}}
+- $group --->  {$group :{_id : "$age"}}
+- $sort  --->  {$sort : {count:-1}}
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Match
+
+- {$match : {name : "Arunkumar"}}
+- {$match : {age :{$gt : 20}}}
+- {$match : {$and : [{gender : "male"}, {age : {$gt : 24}}]} }
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Group
+
+- {$group :{_id : <expression>,<field> : {<accumlator>: <xessin>},.... }}
+
+
+Example
+
+- {$group : {_id : "$age"}}
+- {$group : {_id :{ age : "$age",gender,"$gender"}}}
+- {$group : {$and : [{gender : "male"}, {age : {$gt : 24}}]} }
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Count
+
+- db.collectionName.aggregate([{$count : "AllDocumentCount"}]) ---> 0.21 Seconds ---> 1000  ---> server side
+- db.collectionsName.aggregate([]).toArray().length   ---> 1.7 Seconds ---> 1000 ---> clientside count
+- db.collectionName.aggregate().itcount()  ----> 1.4 Seconds ---> 1000 ---> clientside count
+
+------------------------------------------------------------------------------------------------------------------------
+Group and Count
+
+---- db.collectionsName.aggregate([{$group : {_id : "$userId"}},{$count:"usercount"}])
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Sort Stage
+
+- {$sort : {<field> : <1 | -1>, <field> : <1 | -1> ...}}
+
+Example
+
+- {$sort : {score: -1}}
+- {$sort : {age : 1 , country : 1}}
+- db.collectionName.aggregate([{$group : {eyecolour : "$eyecolour", favouritecolour : "$favouriteColour"}},{$sort : {"_id.eyecolour" : 1,"_id.favouritecolour" : -1}}])
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Project stage
+
+- {$project : {<field1> : 1 ,<field2> : 0,<newfield> : <expression>}}
+
+
+Example
+
+- db.colllectionName.aggregate([{$project : {name :1,city:1}}])
+- db.colllectionName.aggregate([{$project : {_id:0,name :1,city:1}}])
+- db.colllectionName.aggregate([{$project : {name :0,city:0}}])
+- db.colllectionName.aggregate([{$project : {name :1,newcity : "$city"}}])
+- db.colllectionName.aggregate([{$project : {name :1,info:{eyes : "$eyecolour",fruit:"$favoritefruit"}}}])
+- db.colllectionName.aggregate([{$project : {_id:0, newset:{user:"$userId",transactionId : "$txId"}}}])
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Limit Stage
+
+- db.collectionsName.aggregate([
+  {$limit : 100},
+  {$match : {age :{$gt : 20}}},
+  {$group : {_id : "$age"}}
+ ])
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Unwind Stage   --->  split each document with specified array to several document
+
+- {$unwind : <arrayReferenceExpression>}
+
+Example
+
+- {$unwind : "$tags"}  tags ---> that the array key name or schema name
+- {$unwind: "$hobbies"}
+----------------------------------------------------------------------------------------------------------
+Using unwind and project
+
+- db.collectionname.aggregate([{$unwind : "$arrayName"} , {$project :{name:1,tags:1,_id:1}}])
+----------------------------------------------------------------------------------------------------------
+
+Using Unwind and group
+
+- db.collectionname.aggregate([{$unwind : "$arrayName"} , {$group :{_id:"$tags"}}])  arrayName = tags
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Accumlators ---($sum,$avg,$max,$min) --> most accumlators only used in group stage
+
+Example
+
+- {$sum : "$quantity"}
+- {$avg : "$age"}
+- {$max : "$spentMoney"}
+--------------------------------------------------------------------------------------------------------------------------
+Sum  -  {$sum : <Expression | number>}
+- {total : {$sum : "$quantity"}}
+- {count : {$sum : 1}}    ---------------------> we get a count on double = 30.6 
+
+********* if you want whole Number use {$sum : NumberInt(1)}
+
+- db.collectionsname.aggregate([{$group : {_id : "$age", count:{$sum :1}}}])
+----------------------------------------------------------------------------------------------------------------------------
+Sum Unwind and Group
+
+- - db.collectionname.aggregate([{$unwind : "$arrayName"} , {$group :{_id:"$tags",count : {$sum : 1}}}])  arrayName = tags
+
+-----------------------------------------------------------------------------------------------------------------------------
+Average  - {$avg : <expression>}
+
+- {avgage : {$avg : "$age"}}
+
+- db.collectionsname.aggregate([{$group : {_id : "$colour", avgage:{$avg :"$age"}}}])
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Unary Operators -- ( $type , $or , $it , $gt , $and , $multiply)
+
+*** unary operators are usually used in project stage 
+*** In the group stage uary operators can be used only in conjuction with Accumlators 
+
+
+Type Unary Operator 
+
+Example 
+
+-- {$type : "$age"}
+-- {$type : "$name"}
+
+-- db.collectionName.agregate([{$proect : {name : 1, age : 1, ageType : {$type : "$age"}}])
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Out Stage --- writes resulting documents to the mongodb collection ---- out must be last stage in the pipeline
+
+*** using out ---- to get a selectiom key and value in any collections and stored to new collections
+
+- {$out : "newCollectiions"}
+- db.collectionName.aggregate([{ $group : {_id : { age : "$age", name :"$name"}}}, { $Out : "OutCollections"}])
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+AllowdiskUse - Important - if you want to perform large scale aggregation you must use allowdiskuse
+
+*** all aggregation stages can use maximum 100MB of RAM
+*** server will return error if RAM limit exceeded
+*** If error show then use allowDiskUSe: true
+example
+ - db.colectionName.agregate([],{allowDiskUse : true}) 
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+LOOkUP
+
+- db.colectionName.agregate([{$lookup : {from"Collectionname2",localField : "kycId", foreignField : "kycId (original)",as:"giveTheDetails"}}, {$addFields : {giveDetails : {$first : "$giveDetails" Or $arrayElemAt : ["$givenDetails",0]}}}]) 

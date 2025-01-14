@@ -1,0 +1,42 @@
+Docker Roadmap
+
+
+Day 1: Docker Commands
+
+Day 2: To learn ncc and pkg to build a binary
+
+Day 3: After build a image to run on container (Dockerfile)
+
+Day 4: Learn docker network
+
+Day 5: run the image in the container
+
+Day 6: Learn Docker swarm commands
+
+Day 7: Learn about registry and how to use 
+
+Day 8: Deploy the image in docker service mode (swarm)
+
+Day 9: Launch a mongodb replica set in local machine
+
+Day 10: Launch a mongodb replica set in Docker normal mode
+
+Day 11: Launch a mongodb replica set in Docker swarm mode in one node and three nodes
+
+Day 12: Launch a mongodb replica set in Docker swarm mode with x509 certificate
+
+Day 13: Dump data into mongodb
+
+Day 14: Learn ipfs and ipfs cluster
+
+Day 15: Launch ipfs and ipfs cluster in local mode 
+
+Day 16: Launch ipfs and ipfs cluster in local mode use differ version and migration
+
+Day 17: Launch ipfs and ipfs cluster in Docker swarm mode 
+
+Day 18: Automate ipfs and ipfs cluster
+
+Day 19: Launch a application using mongodb,ipfs,redis in one node
+
+Day 20: Launch a application using mongodb,ipfs,redis in three node

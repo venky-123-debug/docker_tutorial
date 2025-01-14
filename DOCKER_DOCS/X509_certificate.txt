@@ -1,0 +1,225 @@
+1. openssl req -x509 -days 365 -newkey rsa:1024 -keyout private-key.pem -out certificate.pem
+
+2. openssl pkcs12 -export -in certificate.pem -inkey private-key.pem -out arun.pfx
+
+3. openssl pkcs12 -in arun.pfx -clcerts -nokeys -out public-key.pem
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+https://dinfratechsource.wordpress.com/2018/12/16/securing-mongodb-with-x-509-authentication/
+------------------------------------------------------------------------------------------------------------------------------
+
+Step 1: Generate Certificates
+
+	cat certificate.pem private-key.pem > mongo.pem
+
+ ##Ensure proper permissions:
+
+	sudo chown mongodb:mongodb mongo.pem
+	sudo chmod 600 mongo.pem
+
+
+Step 2: Update MongoDB Configuration
+
+net:
+  port: 27017
+  bindIp: 0.0.0.0
+  tls:
+    mode: requireTLS
+    certificateKeyFile: /etc/mongo/certs/mongo.pem
+    CAFile: /etc/mongo/certs/public-key.pem
+
+replication:
+  replSetName: rs0
+
+security:
+  authorization: enabled
+  clusterAuthMode: x509
+
+Step 3: Set Up Docker Compose for Docker Swarm
+
+	 volumes:
+      - /home/ubuntu/arun/mongodb/mongo.conf:/etc/mongod.conf
+      - /home/ubuntu/arun/mongodb/certs:/etc/mongo/certs
+      - /home/ubuntu/arun/mongodb/db1:/data/db
+
+Step 5: Initiate the Replica Set
+
+	docker exec -it <container_id> mongo --tls --tlsCAFile /etc/mongo/certs/public-key.pem --tlsCertificateKeyFile /etc/mongo/certs/mongo.pem
+
+
+rs.initiate({
+  _id: "rs0",
+  members: [
+    { _id: 0, host: "mongo1:27017" },
+    { _id: 1, host: "mongo2:27017" },
+    { _id: 2, host: "mongo3:27017" }
+  ]
+})
+
+Step 6: Create MongoDB Users with x.509 Authentication
+
+	docker exec -it <container_id> mongo --tls --tlsCAFile /etc/mongo/certs/public-key.pem --tlsCertificateKeyFile /etc/mongo/certs/mongo.pem
+
+
+  Create an admin user with x.509 authentication:
+
+use admin
+db.getSiblingDB("$external").runCommand(
+  {
+    createUser: "CN=<Your Common Name>,O=<Your Organization>,OU=<Your Organizational Unit>",
+    roles: [
+      { role: "root", db: "admin" }
+    ]
+  }
+)
+
+
+Step 7: Configure the MongoDB Client
+
+	mongo --tls --tlsCAFile /path/to/public-key.pem --tlsCertificateKeyFile /path/to/mongo.pem --host <hostname>
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+net:
+  ssl:
+    mode: requireSSL
+    PEMKeyFile: /path/to/www.example.com.pem
+    CAFile: /path/to/CA.pem
+    allowConnectionsWithoutCertificates: false
+
+security:
+  clusterAuthMode: x509
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+Create a Certificate Authority (CA)
+
+ openssl genrsa -out ca.key 4096
+
+ openssl req -x509 -new -nodes -key ca.key -sha256 -days 365 -out ca.crt 
+
+Generate the server key:
+
+ openssl genrsa -out server.key 4096
+
+ openssl req -new -key server.key -out server.csr 
+
+ openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt -days 365 -sha256
+
+ cat server.key server.crt > server.pem
+
+
+
+
+
+
+
+net:
+  ssl:
+    mode: requireSSL
+    PEMKeyFile: /path/to/server.pem
+    CAFile: /path/to/ca.crt
+    clusterFile: /path/to/server.pem
+    clusterCAFile: /path/to/ca.crt
+    allowConnectionsWithoutCertificates: false
+
+security:
+  clusterAuthMode: x509
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+[ ca ]
+# X509 extensions for a ca
+keyUsage = critical, cRLSign, keyCertSign
+basicConstraints = CA:TRUE, pathlen:0
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always,issuer:always
+
+[ server ]
+# X509 extensions for a server
+keyUsage = critical,digitalSignature,keyEncipherment
+extendedKeyUsage = serverAuth,clientAuth
+basicConstraints = critical,CA:FALSE
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid,issuer:always
+
+
+
+openssl genrsa -out ca.key 4096
+openssl req -x509 -new -nodes -key ca.key -sha256 -days 365 -out ca.crt -config openssl.cnf -extensions ca -subj "/C=IN/ST=TN/L=Chennai/O=Print2block/OU=IT/CN=Arun CA"
+
+
+openssl genrsa -out server.key 4096
+openssl req -new -key server.key -out server.csr -config openssl.cnf -subj "/C=IN/ST=TN/L=Chennai/O=Print2block/OU=IT/CN=server1"
+
+openssl req -new -key server.key -out server.csr \
+  -subj "/C=IN/ST=TN/L=Chennai/O=Print2block/OU=IT/CN=www.example.com"
+
+openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt -days 365 -sha256 -extfile openssl.cnf -extensions server
+
+cat server.key server.crt > server.pem
+
+
+
+
+net:
+  ssl:
+    mode: requireSSL
+    PEMKeyFile: /path/to/server.pem
+    CAFile: /path/to/ca.crt
+    allowConnectionsWithoutCertificates: false
+
+security:
+  clusterAuthMode: x509
+
+
+ ----------------------------------------------------------------------------------------------------------
+storage:
+  dbPath: /data/db
+  journal:
+    enabled: true
+
+systemLog:
+  destination: file
+  logAppend: true
+  path: /var/log/mongodb/mongod.log
+
+net:
+  bindIp: 0.0.0.0
+  port: 27017
+  tls:
+    mode: requireTLS
+    certificateKeyFile: /path/to/server.pem
+    CAFile: /path/to/ca.crt
+
+replication:
+  replSetName: rs0
+
+security:
+  clusterAuthMode: x509
+
+-----------------------------------------------------------------------------------------
+
+ mongo --tls --tlsCAFile /etc/mongo/ssl/ca.crt --tlsCertificateKeyFile /etc/mongo/ssl/ssl.pem --host node-0.mongocuster.print2block.com
+
+
+ docker exec -it mongo_cluster_mongo1.1.1kuuu8iy1r93fobv4qwq9dmip mongo --tls --tlsCAFile /etc/mongo/ssl/ca.crt --tlsCertificateKeyFile /etc/mongo/ssl/server.pem --host server1 --port 27017
+
+docker exec -it <mongo1_container_id> mongo --tls --tlsCAFile /etc/mongo/ssl/ca.crt --tlsCertificateKeyFile /etc/mongo/ssl/server.pem --host mongo1 --port 27017 --tlsAllowInvalidHostnames
+
+docker exec -it mongo_cluster_mongo1.1.1kuuu8iy1r93fobv4qwq9dmip mongo --tls --tlsCAFile /etc/mongo/ssl/ca.crt --tlsCertificateKeyFile /etc/mongo/ssl/server.pem --host mongo1 --port 27017 ^[[200~ --tlsAllowInvalidHostnames --authenticationMechanism MONGODB-X509 --username "CN=admin,OU=MongoDB,O=MyOrganization,L=MyCity,ST=MyState,C=MyCountry" --authenticationDatabase "$external"
+
+
+
+
+
+
+mongorestore --ssl --sslCAFile="/etc/mongo/ssl/ca.crt" --sslPEMKeyFile="/temp/mongo/appReadWrite.pem" --authenticationDatabase '$external' --authenticationMechanism MONGODB-X509 --host "rs0/node-0.mongocuster.print2block.com:27017,node-1.mongocuster.print2block.com:27017,node-2.mongocuster.print2block.com:27017" --db=docchain /temp/dump
+

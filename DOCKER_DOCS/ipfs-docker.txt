@@ -1,0 +1,238 @@
+Create a Dockerfile:
+
+mkdir my-ipfs
+cd my-ipfs
+touch Dockerfile
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+
+Edit the Dockerfile:
+
+# Use an official Ubuntu base image
+FROM ubuntu:latest
+
+# Install necessary dependencies
+RUN apt-get update && apt-get install -y \
+    wget \
+    tar \
+    ca-certificates \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set up environment variables
+ENV IPFS_VERSION=v0.29.0
+ENV IPFS_PATH=/data/ipfs
+
+# Download and install IPFS
+RUN wget https://dist.ipfs.tech/kubo/${IPFS_VERSION}/kubo_${IPFS_VERSION}_linux-amd64.tar.gz \
+    && tar -xvzf kubo_${IPFS_VERSION}_linux-amd64.tar.gz \
+    && mv kubo/ipfs /usr/local/bin/ipfs \
+    && rm -rf kubo kubo_${IPFS_VERSION}_linux-amd64.tar.gz
+
+# Create the IPFS data directory and initialize IPFS repo
+RUN mkdir -p ${IPFS_PATH} \
+    && ipfs init --profile=server
+
+# Expose necessary ports
+EXPOSE 4001
+EXPOSE 5001
+EXPOSE 8080
+
+# Set the working directory
+WORKDIR ${IPFS_PATH}
+
+# Define the entrypoint
+ENTRYPOINT ["ipfs", "daemon", "--migrate=true"]
+
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+Build the Docker Image:
+
+docker build -t my-ipfs:latest .
+
+-----------------------------------------------------------------------------------------------------------------------
+
+Run the Docker Container:
+
+docker run -d --name ipfs_host -v /home/ubuntu/ipfs-docker/my-ipfs/data:/data/ipfs -p 4001:4001 -p 5001:5001 -p 8080:8080 my-ipfs:latest
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------
+
+Automate the Build with a Script
+
+build_and_run.sh:
+
+#!/bin/bash
+
+# Variables
+IMAGE_NAME="my-ipfs"
+DATA_DIR="/path/to/ipfs/data"
+CONTAINER_NAME="ipfs_host"
+
+# Build the Docker image
+docker build -t $IMAGE_NAME:latest .
+
+# Run the Docker container
+docker run -d --name $CONTAINER_NAME \
+  -v $DATA_DIR:/data/ipfs \
+  -p 4001:4001 \
+  -p 5001:5001 \
+  -p 8080:8080 \
+  $IMAGE_NAME:latest
+
+# Display container logs
+docker logs -f $CONTAINER_NAME
+
+
+------------------------------------------------------------------------------------------------------------------------------
+
+
+Make the script executable and run it:
+
+chmod +x build_and_run.sh
+./build_and_run.sh
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+DockerFille
+
+# Use an official Ubuntu base image
+FROM ubuntu:latest
+
+# Install necessary dependencies
+RUN apt-get update && apt-get install -y \
+    wget \
+    tar \
+    ca-certificates \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set up environment variables
+ENV IPFS_VERSION=v0.29.0
+ENV IPFS_PATH=/data/ipfs
+
+# Download and install IPFS
+RUN wget https://dist.ipfs.tech/kubo/${IPFS_VERSION}/kubo_${IPFS_VERSION}_linux-amd64.tar.gz \
+    && tar -xvzf kubo_${IPFS_VERSION}_linux-amd64.tar.gz \
+    && mv kubo/ipfs /usr/local/bin/ipfs \
+    && rm -rf kubo kubo_${IPFS_VERSION}_linux-amd64.tar.gz
+
+# Create the IPFS data directory
+RUN mkdir -p ${IPFS_PATH}
+
+# Expose necessary ports
+EXPOSE 4001
+EXPOSE 5001
+EXPOSE 8080
+
+# Set the working directory
+WORKDIR ${IPFS_PATH}
+
+# Initialize IPFS repo if not already initialized and start the daemon
+CMD ["/bin/sh", "-c", "if [ ! -f /data/ipfs/config ]; then ipfs init; fi && ipfs daemon --migrate=true"]
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Build Image
+
+docker build -t my-ipfs:latest .
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Manually Initialize the IPFS Repository:
+
+docker run -it --rm -v /home/ubuntu/ipfs-docker/my-ipfs/data:/data/ipfs my-ipfs:latest /bin/sh
+
+ipfs init
+exit
+-----------------------------------------------------------------------------------------------------------------
+Run a Container
+
+docker run -d --name ipfs_host -v /home/ubuntu/ipfs-docker/my-ipfs/data:/data/ipfs -p 4001:4001 -p 5001:5001 -p 8080:8080 my-ipfs:latest
+
+
+set up configuration on open the container bash
+
+"API": "/ip4/0.0.0.0/tcp/5001",
+"Gateway": "/ip4/0.0.0.0/tcp/8080"
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Revised Shell Script Without Intermediate Copy
+
+
+#!/bin/bash
+
+# Define variables
+IMAGE_NAME="my-ipfs:latest"
+CONTAINER_NAME="ipfs_host"
+LOCAL_IPFS_PATH="/home/ubuntu/ipfs-docker/my-ipfs/data"
+DOCKERFILE_DIR="my-ipfs"
+DOCKER_IPFS_PATH="/data/ipfs"
+IPFS_VERSION="v0.29.0"
+LOCAL_IPFS_BINARY_PATH="/home/ubuntu/ipfs-docker/my-ipfs/kubo/ipfs"
+
+# Create directory for Dockerfile
+mkdir -p $DOCKERFILE_DIR
+cd $DOCKERFILE_DIR
+
+# Copy the IPFS binary to the Dockerfile directory
+cp ${LOCAL_IPFS_BINARY_PATH} .
+
+# Create the Dockerfile
+cat << EOF > Dockerfile
+# Use an official Ubuntu base image
+FROM ubuntu:latest
+
+# Install necessary dependencies
+RUN apt-get update && apt-get install -y \\
+    wget \\
+    tar \\
+    ca-certificates \\
+    && apt-get clean \\
+    && rm -rf /var/lib/apt/lists/*
+
+# Set up environment variables
+ENV IPFS_VERSION=${IPFS_VERSION}
+ENV IPFS_PATH=${DOCKER_IPFS_PATH}
+
+# Copy the IPFS binary from the Dockerfile directory into the container
+COPY ipfs /usr/local/bin/ipfs
+
+# Create the IPFS data directory
+RUN mkdir -p \${IPFS_PATH}
+
+# Expose necessary ports
+EXPOSE 4001
+EXPOSE 5001
+EXPOSE 8080
+
+# Set the working directory
+WORKDIR \${IPFS_PATH}
+
+# Initialize IPFS repo if not already initialized and start the daemon
+CMD ["/bin/sh", "-c", "if [ ! -f /data/ipfs/config ]; then ipfs init; fi && ipfs daemon --migrate=true"]
+EOF
+
+# Build the Docker image
+docker build -t $IMAGE_NAME .
+
+# Manually initialize the IPFS repository
+docker run -it --rm -v ${LOCAL_IPFS_PATH}:${DOCKER_IPFS_PATH} $IMAGE_NAME /bin/sh -c "ipfs init"
+
+# Run the Docker container
+docker run -d --name $CONTAINER_NAME -v ${LOCAL_IPFS_PATH}:${DOCKER_IPFS_PATH} -p 4001:4001 -p 5001:5001 -p 8080:8080 $IMAGE_NAME
+
+echo "Docker container '$CONTAINER_NAME' is running with image '$IMAGE_NAME'."
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+
+Steps to Execute
+
+chmod +x setup_ipfs.sh
+./setup_ipfs.sh
+

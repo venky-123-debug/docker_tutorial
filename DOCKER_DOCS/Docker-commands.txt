@@ -1,0 +1,488 @@
+Docker 
+
+#create folder     ----->   mkdir folder name 
+
+#change folder name ----->  mv  folder name  new folder name
+ 
+docker run -p 11000:80 nginx:latest  ------>  #docker run
+
+docker run -d -p 11000:80 nginx:latest   ------>   #backround running {-p port mapping}
+
+docker ps    -------> List running containers
+
+docker ps -a ------> list all container including stopped
+
+docker container prune   ------->  #clean container in exited state
+
+docker stop container name or container id    -----> #stop container
+
+docker pull mongo:4.4    ------>  #pull mongodb in docker
+
+docker run -d --name mongo mongo:4.4    ------>   #run container
+
+docker run -d -h docker --name arun mongo:4.4   ------>   #run container and added host name
+
+nano /etc/hosts
+
+nano /etc/hostname
+
+docker stop $(docker ps -aq)    ------>  #stop all container
+
+cat filename     ------->  #file reading
+
+docker run -d --hostname mongo mongo:4.4
+
+-------------------------------------------------------------------------------
+
+Pm2 Tool -----
+
+pm2 start server.js --name anyname
+pm2 ls
+pm2 logs
+pm2 stop container name
+pm2 save
+
+------------------------------------------------------------------------------
+
+docker start container Name or id    ------>  #To start inactive container
+docker stop container name or id     ------>  #To stop running container
+docker container prune               ------>  #To delete all stop containers
+
+------------------------------------------------------------------------------
+
+NCC ----
+
+ncc install
+next comment 
+ncc build <server.js> -o dist
+
+----------------------------------------------------------------------------
+
+pkg install----
+
+npm install -g pkg
+
+pkg -t node18-linux --compress -GZip -o arun-pkg index.js   ----->  #pkg build
+
+chmod +x <filename> ------> to make binary as executable pkg file.
+
+./filename    ------>  #To run package file
+
+----------------------------------------------------------------------------
+touch <filename> ------> create file in cli
+
+
+---------------------------------------------------------------------------------------------------------
+
+Docker Build and Run Container -----
+
+docker build -t arun-docker:1.0.0 .      ------>  #build images
+docker build -t 127.0.0.1:5000/ipfs:latest .
+
+
+  -------> #Build i,ags
+
+
+
+docker run -d -p  11000:11000 --network apps --network-alias mongo mongo:4.4    --------->  #Create image
+docker run -d --env-file .env --network apps -p  4000:7700 arun-docker:1.0.0     --------->  #run on container
+
+
+
+------------------------------------------------------------
+
+docker run -d -p 5000:5000 --name registry registry:2  --------->  #To create a registry in normal
+
+--------------------------------------------------------------
+Docker image pushed in that registry ----------
+
+ docker push 127.0.0.1:5000/arun-docker:1.0.0    ----------> #Docker push command
+
+---------------------------------------------------------------------------------------------------------------
+
+docker logs container id -f  #to see logs
+ tmux kill-session -t 3 session id
+
+
+
+--------------------------------------------------------------------------------------------
+
+docker inspect cd00671d5c6c    --------> #Too see the running container details 
+
+
+Container Login
+
+docker exec -it pedantic_mcclintock bash  -------> #Container login
+
+
+
+
+---------------------------------------------------------------------
+NETWORK
+----------------------
+
+ docker network ls  ------>  #To see network list
+docker network create apps  ----------> for normal docker
+
+docker network create --attachable -d overlay apps  --------> #To create a new network
+docker network create --attachable --driver overlay --subnet 17.17.17.0/24 apps
+docker network create --opt encrypted --attachable --driver overlay --subnet 10.0.10.0/24 apps 
+
+
+
+------------------------------------------------------------
+
+Dockerfile ----------
+
+FROM ubuntu:focal
+COPY arun-pkg /usr/bin/
+CMD arun-pkg
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+FOR IMAGES
+
+ * docker pull nginx:latest -- docker image ls
+  
+1) docker search application name (httpd) ----> docker hub (registry)
+2) checking images - sudo docker images                                      X)sudo docker system df
+3) pull image --> sudo docker pull image name (httpd)
+
+
+
+FOR CONTAINER
+
+container create -> sudo docker create
+container run  -> sudo docker run
+aleady running -> sudo docker ps or sudo docker ps -a
+
+
+container creation -> sudo docker run --name containername image name
+eample : sudo docker run --name web1 httpd  --->  temporary running
+         sudo docker run -d --name web1 httpd ---> permanant running on background
+1) to check a container logs ---> sudo docker logs web1
+
+
+CONTAINER LOGIN 
+
+1) sudo docker exec -it web1 /bin/sh - container login  
+  
+-it ----> Intractive terminal
+
+
+
+direct command work in container
+
+1) sudo docker exec web1 uname -a
+2) sudo docker exec web1 mkdir /tmp/arun       x) cd /tmp/   ls -lrt
+
+
+COPY FILE 
+
+1) sudo docker cp fileName 3163663:/tmp/
+2) sudo docker cp file name web1:/tmp/
+
+
+HOW TO START AND STOP CONTAINER
+1) sudo docker 
+2) sudo docker stop web1(container name)
+3) sudo docker start web1(container name)
+
+REMOVE A CONTAINER SPECIFIC
+
+1) sudo docker rm web1
+
+REMOVE A SPECIFIC IMAGE 
+
+1) sudo docker rmi image name
+
+ADD PORT IN CONTAINER
+
+1) sudo docker run -d -it --name web2 -p 81:80 httpd
+
+
+IMAGE BACKUP
+
+1) sudo docker save httpd:latest > htt-bkp.tar
+
+
+ALL IMAGES DELETE
+
+1) sudo docker rmi $*(sudo docker images -a -q)
+
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+DOCKER SWARM
+
+#docker swarm init #first its set to be a manager --- after you get token --- you use that token in another instance to run as a worker
+
+    docker swarm join --token SWMTKN-1-3askf7ah4ntdjkn6armw4me0azlibkibd611h2px05n26yqp3j-akcb390g5wgzvz1mj4kag8bzb 172.31.12.55:2377
+
+
+TO DEPLOY SWARMPIT IN UBUNTU
+
+
+###  https://github.com/swarmpit/swarmpit  ###
+
+docker run -it --rm \
+  --name swarmpit-installer \
+  --volume /var/run/docker.sock:/var/run/docker.sock \
+  swarmpit/install:1.9
+
+
+
+Docker service commands
+----------------------------
+
+docker service ls               ------>   #To see a running container
+
+docker stack rm swarmpitName    ------>   #To remove a swarmpit
+
+docker stack ps swarmpitName --no-trunc    ------>  #To see full details in running container
+
+docker stack ls                 ------>   #To see te swarmpit name and services
+
+docker node ls                  ------>   #Too see the node list
+
+
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+#To run container on registry in docker service
+
+
+sudo docker service create \
+  --name registry \
+  --publish published=5000,target=5000 \
+  --constraint 'node.role == manager' \
+  --mount type=volume,source=registry-data,target=/var/lib/registry \
+  registry:2
+
+
+
+
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+DEPLOYMENT IN DOCKER service(stack deployment)
+---------------------
+
+
+Create docker-compose.yml file ---- nano docker-compose.yml
+
+In Inside put this code like as you want
+
+version: '3.8'
+
+services:
+  my-service:
+    image: <your_registry>/<your_image>:<your_tag>
+    ports:
+      - "80:80"  # Adjust the ports as needed
+    deploy:
+      replicas: 1  # Adjust the number of replicas as needed
+
+
+#Running comment  ----->    docker stack deploy -c docker-compose.yml <stack_name>
+
+#Replace <stack_name> with the name you want to give to your Docker stack.
+
+
+#To see the stack      --->  docker stack ls
+#To remove the stack   --->  docker stack rm stackName
+
+
+
+
+docker service logs -f arun-deploy_my-service      #Too see the running container logs
+
+docker stack ps arun-deploy --no-trunc             #Too see the full details
+
+
+
+
+
+
+
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+SET UP REGISTRY FOR USER AND PASSWORD (AUTHENTICATION)
+
+
+STEP:1  Create the necessary directories:
+
+         mkdir -p ~/docker_registry/auth
+
+STEP:2 Install htpasswd utility (part of apache2-utils) to create password files:
+
+       sudo apt install apache2-utils
+
+STEP:3 Generate a password file with a username and password:
+
+       htpasswd -Bc ~/docker_registry/auth/htpasswd myuser           
+		
+			  ------------
+
+      if you want to add another user remove the -Bc and give -B
+	
+	 htpasswd -B ~/docker_registry/auth/htpasswd myuser
+
+
+       Replace myuser with your desired username. You will be prompted to enter a password.
+
+STEP:4 Update the registry service to use authentication:
+
+	sudo docker service update \
+  	--mount-add type=bind,source=$HOME/docker_registry/auth,target=/auth \
+  	--env-add REGISTRY_AUTH=htpasswd \
+  	--env-add REGISTRY_AUTH_HTPASSWD_REALM="Registry Realm" \
+  	--env-add REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd \
+  	registry
+
+Step 3: Verify the Update
+        
+	sudo docker service inspect registry
+
+Step 5:  Log in to the Secured Registry
+
+	docker login 127.0.0.1:5000         ------------# Don't give localhost 
+
+after that the prompt has open and you can give username and password after that you can push and pull image this registry
+
+Step :6 You can logout for using this command
+ 
+	docker logout 127.0.0.1:5000
+
+
+---------------------------------------------------------------------------------------------------------------------------------------
+
+TO PUSH THE IMAGE INTO ANOTHER REGISTRY
+
+WHILE THAT YOU HAVE TO ADD nginx.config file  ----------------- sudo nano /etc/nginx/nginx.conf -------------> to add this ---------->  client_max_body_size 200M;
+
+push command ------- docker push docker.p2bdev.team/arun-img:1.0.0
+                                         |
+					 |
+                                         |-------host Name
+
+
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+server {
+    server_name docker.p2bdev.team;
+
+    # Authentication for the entire /v2/ endpoint
+    location /v2/ {
+        auth_basic "Restricted";
+        auth_basic_user_file /home/ubuntu/docker_registry/auth/htpasswd;   # Use your existing htpasswd file
+
+        # For pushing images
+        location ~* /v2/.*(blobs/uploads|manifests|tags/list).*$ {
+            auth_basic_user_file /home/ubuntu/docker_registry/auth/htpasswd_push;   # Separate file for push acc
+        }
+
+        # For pulling images
+        location /v2/ {
+            auth_basic_user_file /home/ubuntu/docker_registry/auth/htpasswd_pull;   # Separate file for pull access
+        }
+
+        proxy_pass http://127.0.0.1:5000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 900;
+    }
+
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/docker.p2bdev.team/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/docker.p2bdev.team/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+}
+
+server {
+    if ($host = docker.p2bdev.team) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+    server_name docker.p2bdev.team;
+    listen 80;
+    return 404; # managed by Certbot
+}
+
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+DOCKER SERVICE SCALE METHOD
+
+Steo 1 :  Scale down the services: Use the docker service scale command to scale each service to zero replicas.
+
+		docker service scale <stack_name>_<service_name>=0
+
+Step 3 : To start the services again, scale them back to the desired number of replicas. For example, to scale the web service back to 3 replicas and the db service back to 1 replica:
+
+
+	docker service scale my_stack_web=3
+	docker service scale my_stack_db=1
+
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+SCP commands
+
+
+https://docs.google.com/document/d/1fcXIa7U17Z_IOHgH0HOjD1rNQkzSWomOryuJjBS_60M/edit?usp=sharing
+
+
+# Generate a new SSH key pair with a customized name
+ssh-keygen -t rsa -b 4096 -C "venkat@print2block.com" -f /home/ubuntu/.ssh/venky_private
+
+# Display the generated public key
+cat /home/ubuntu/.ssh/venky_private.pub
+
+# Start the SSH agent
+eval "$(ssh-agent -s)"
+
+# Add the private key to the SSH agent
+ssh-add /home/ubuntu/.ssh/venky_private
+
+# Copy the public key to the remote server using ssh-copy-id with force option
+ssh-copy-id -f -i /home/ubuntu/.ssh/venky_private.pub ubuntu@3.6.36.125
+
+# Alternatively, manually copy the public key content
+cat /home/ubuntu/.ssh/venky_private.pub
+
+# SSH into the remote server
+ssh ubuntu@3.6.36.125
+
+# Open the authorized_keys file on the remote server
+nano ~/.ssh/authorized_keys
+
+# Append the copied public key content to the authorized_keys file and save it
+# Paste the public key content here and save
+
+# Ensure the permissions are correct for security
+chmod 600 ~/.ssh/authorized_keys
+chmod 700 ~/.ssh
+
+# Test the connection to the remote server using the new SSH key
+ssh -i /home/ubuntu/.ssh/venky_private ubuntu@3.6.36.125
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

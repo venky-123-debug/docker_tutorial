@@ -1,0 +1,129 @@
+# To init swarm
+docker swarm init
+
+# To display dokcer info
+docker info
+
+# To view information about nodes:
+docker node ls
+
+#################################################################################################################
+
+## TO CREATE SWARM STACK U HAVE TO PREBUILT IMAGES BEFORE ##
+# Pull MongoDB Docker Image
+docker pull mongo:4.4
+
+# Pull Nginx Docker Image
+docker pull nginx:latest
+
+# Create Docker Network
+docker network create venky_network
+
+# Run MongoDB Container
+docker run -d --env-file .env -p 27017:27017 --network venky_network --name mongo mongo:4.4
+
+
+# Install ncc globally 
+npm install -g @vercel/ncc
+
+# Install pkg globally 
+npm install -g pkg
+
+# Compile Your Node.js Application with ncc
+ncc build index.js -o dist
+
+# Package Your Node.js Application with pkg
+pkg -t node18-linux --compress -GZip -o server-pkg dist/index.js
+
+# Run Packaged Node.js Application
+./server-pkg
+
+############################################################################################################
+
+# Create Dockerfile (open with a text editor, e.g., nano) SHOULD BE PLACED WHERE PKG FILE EXISTS
+nano Dockerfile
+
+#### Sample Dockerfile Content: ####
+
+# FROM ubuntu:latest
+# WORKDIR /app
+# COPY dist/server-pkg .
+# EXPOSE 3000
+# CMD ["./server-pkg"]
+
+# Build Docker Image for Node.js Application
+docker build -t nodejs-app:1.0 .
+
+# Run Node.js Application Container
+docker run -d --env-file .env -p 3000:3000 --network venky_network --name nodejs-app nodejs-app:1.0
+
+###############################################################################################################
+## DOCKER REGISTRY ##
+
+# Step 1: Create Docker Registry (if not already created)
+sudo docker service create \
+  --name registry \
+  --publish published=5000,target=5000 \
+  --constraint 'node.role == manager' \
+  --mount type=volume,source=registry-data,target=/var/lib/registry \
+  registry:2
+
+#####################################################################################################################
+
+# Step 2: Navigate to your Node.js application directory
+cd /path/to/your/nodejs-app  < Node.js app directory path >
+
+# Step 3: Build Node.js app Docker image
+docker build -t nodejs-app .
+
+# Step 4: Tag the Node.js image for the registry
+docker tag nodejs-app 127.0.0.1:5000/nodejs-app:1.0.0
+
+# Step 5: Push the Node.js image to the registry
+docker push 127.0.0.1:5000/nodejs-app:1.0.0
+
+#### To tag and push image to registry the existing image ####
+docker tag <existing-image-name> 127.0.0.1:5000/nodejs-app:1.0.0 && docker push 127.0.0.1:5000/nodejs-app:1.0.0
+
+
+# Step 6: If you have a custom MongoDB image, build and push it
+# cd /path/to/your/mongo-app  # Navigate to your MongoDB app directory if necessary
+# docker build -t mongo-app .
+# docker tag mongo-app 127.0.0.1:5000/mongo-app:1.0.0
+# docker push 127.0.0.1:5000/mongo-app:1.0.0
+
+# Step 7: Create docker-compose.yml file
+cat <<EOF > docker-compose.yml
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo  # Use 127.0.0.1:5000/mongo-app:1.0.0 for a custom MongoDB image
+    volumes:
+      - /home/ubuntu/test/mongo-data:/data/db
+    networks:
+      - app-network
+
+  nodejs-app:
+    image: 127.0.0.1:5000/nodejs-app:1.0.0  # Your Node.js image
+    ports:
+      - "3000:3000"
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/mydatabase  # Update with your MongoDB database name
+    networks:
+      - app-network
+    deploy:
+      replicas: 3  # Number of instances to run
+
+networks:
+  app-network:
+
+volumes:
+  mongo-data:
+EOF
+
+# Step 8: Deploy the stack in Docker Swarm
+docker stack deploy -c docker-compose.yml my_stack  # Replace my_stack with your desired stack name
+
+# Step 9: Access your Node.js application
+# Open a web browser and go to http://<manager-node-ip>:3000

@@ -1,0 +1,20 @@
+# Check if the new volume is detected
+lsblk
+
+# If the volume is not visible, reboot the instance and re-check
+sudo reboot
+
+# After reboot, check the devices again
+lsblk
+
+# Once the new volume (e.g., /dev/xvdf or /dev/nvme1n1) is visible, extend the partition
+sudo growpart /dev/xvdf 1   # Replace xvdf with the correct device name from lsblk output
+
+# Resize the file system to use the new space
+# For ext4 filesystem
+sudo resize2fs /dev/xvdf1   # Replace xvdf1 with the correct partition name
+# OR, for XFS filesystem
+sudo xfs_growfs /dev/xvdf1
+
+# Verify that the new space is available
+df -h

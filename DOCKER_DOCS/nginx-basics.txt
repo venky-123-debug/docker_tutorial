@@ -1,0 +1,80 @@
+## basic nginx default configuration file  ##
+server {
+        listen 80 default_server;
+        listen [::]:80 default_server;
+        root /var/www/html;
+
+        index index.html index.htm index.nginx-debian.html;
+
+        server_name _;
+
+        location / {
+                try_files $uri $uri/ =404;
+        }
+}
+
+----------------------------------------------------------------------------------------------------------------
+## Nginx location directive examples ##
+
+---- URL ------
+https://www.digitalocean.com/community/tutorials/nginx-location-directive#nginx-location-directive-syntax
+
+----NGINX location directive syntax---
+
+location [modifier] [URI] {
+  ...
+  ...
+}
+
+----------------------------------------------------------------------------------------------------------------
+## Types of NGINX modifiers
+
+none: If no modifiers are present in a location block then the requested URI will be matched against the beginning of the requested URI.
+=: The equal sign is used to match a location block exactly against a requested URI.
+~: The tilde sign is used for case-sensitive regular expression match against a requested URI.
+~*: The tilde followed by asterisk sign is used for case insensitive regular expression match against a requested URI.
+^~: The carat followed by tilde sign is used to perform longest nonregular expression match against the requested URI. If the requested URI hits such a location block, no further matching will takes place.
+----------------------------------------------------------------------------------------------------------------
+
+server {
+    listen 80;
+    server_name __;
+
+    root /var/www/html;
+    index index.html;
+
+    # 1. Exact match for example for = operator like /about
+    location = /about {
+        return 200 "This is the about page, exact match.\n";
+    }
+
+    # 2. Longest prefix match for static assets, with `^~`
+    location ^~ /static/ {
+        root /var/www/static;
+        try_files $uri $uri/ =404;
+    }
+
+    # 3. Case-sensitive regex match for PHP files, with `~`
+    location ~ \.php$ {
+        fastcgi_pass 127.0.0.1:9000;
+        fastcgi_index index.php;
+        include fastcgi_params;
+    }
+
+    # 4. Case-insensitive regex match for images, with `~*`
+    location ~* \.(jpg|jpeg|png|gif|ico)$ {
+        expires 30d;
+        access_log off;
+    }
+
+    # 5. Generic location match (no modifier)
+    location /blog/ {
+        return 200 "This is the blog section, no modifier (prefix match).\n";
+    }
+
+    # 6. Catch-all for other requests
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
+

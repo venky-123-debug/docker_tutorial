@@ -1,0 +1,516 @@
+ ipfs add hello.txt
+ipfs name publish <hash>
+
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+Step 1: Install Go
+Update Linux packages and dependencies:
+
+sudo apt-get update
+sudo apt-get -y upgrade
+
+
+Download the latest version of Go and unzip it:
+
+wget https://golang.org/dl/go1.20.5.linux-amd64.tar.gz
+sudo tar -xvf go1.20.5.linux-amd64.tar.gz
+sudo mv go /usr/local
+
+
+Set up Go environment variables:
+Create a directory for Go workspace:
+
+
+mkdir $HOME/gopath
+
+
+Edit the .bashrc file to set Go environment variables:
+
+nano $HOME/.bashrc
+
+Add the following lines to the end of the file:
+
+export GOROOT=/usr/local/go
+export GOPATH=$HOME/gopath
+export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
+
+Update the current session with new environment variables and verify Go installation:
+
+source ~/.bashrc
+go version
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+Step 2: Install IPFS
+Download the latest version of go-ipfs:
+
+
+wget https://dist.ipfs.io/go-ipfs/v0.16.0/go-ipfs_v0.16.0_linux-amd64.tar.gz
+Unzip and install IPFS:
+
+
+tar xvfz go-ipfs_v0.16.0_linux-amd64.tar.gz
+sudo mv go-ipfs/ipfs /usr/local/bin/ipfs
+
+
+Initialize IPFS and check the version:
+
+ipfs init
+ipfs version
+
+Repeat steps 1 to 3 for all nodes in your network.
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+Step 3: Creating a Private Network
+Install the swarm key generation utility (only on Node0):
+
+
+go install github.com/Kubuxu/go-ipfs-swarm-key-gen/ipfs-swarm-key-gen@latest
+
+
+Generate the swarm.key file on Node0:
+
+ipfs-swarm-key-gen > ~/.ipfs/swarm.key
+
+Copy the swarm.key file to the IPFS directory of each node.
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+Remove default bootstrap nodes from each node:
+
+ipfs bootstrap rm --all
+
+
+
+
+
+
+Add Node0 as a bootstrap node on each other node:
+
+On each of the other nodes, run:
+ipfs id
+
+ipfs bootstrap add /ip4/<Node0_IP_Address>/tcp/4001/ipfs/<Node0_Peer_ID>
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+3. Set the Environment Variable to Force Private Network Mode
+To ensure that IPFS operates in private mode, set the following environment variable:
+
+
+export LIBP2P_FORCE_PNET=1
+
+echo 'export LIBP2P_FORCE_PNET=1' >> ~/.bashrc
+source ~/.bashrc
+
+ipfs bootstrap list
+ipfs swarm peers
+ipfs shutdown
+ipfs daemon &
+
+ipfs id
+
+ipfs ping <Peer_ID>
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+pkill ipfs
+ps aux | grep ipfs
+sudo kill -9 <PID>
+
+
+1. Set up the IPFS daemon as a service
+
+ Create the ipfs.service file
+
+
+sudo nano /etc/systemd/system/ipfs.service
+
+
+[Unit]
+Description=IPFS Daemon
+After=syslog.target network.target remote-fs.target nss-lookup.target
+
+[Service]
+Type=simple
+User=ubuntu
+ExecStart=/usr/local/bin/ipfs daemon --enable-namesys-pubsub
+Environment="IPFS_PATH=/home/ubuntu/.ipfs"
+Environment="LIBP2P_FORCE_PNET=1"
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+1.3. Reload systemd, enable and start the service
+
+
+sudo systemctl daemon-reload
+sudo systemctl enable ipfs
+sudo systemctl start ipfs
+sudo systemctl status ipfs
+
+2. Verify the IPFS Daemon on Node 
+
+
+sudo systemctl status ipfs
+
+3. Testing the Setup
+3.1. Add a file on Node 0
+
+
+mkdir -p test-files
+echo "hello IPFS" > test-files/file.txt
+ipfs add test-files/file.txt
+ipfs cat QmYDAmHsFu5oWsJU21esKnN4ZRyE8txJNvrZxvxXLymC2L
+
+Note the hash (CID) returned after adding the file.
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+wget https://go.dev/dl/go1.21.1.linux-amd64.tar.gz
+
+
+3. Reinstall Go
+Reinstall Go 1.21.1:
+
+
+wget https://dl.google.com/go/go1.21.1.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf go1.21.1.linux-amd64.tar.gz
+
+
+4. Update Environment Variables
+
+export GOROOT=/usr/local/go
+export GOPATH=$HOME/gopath
+export PATH=$PATH:$GOROOT/bin:$GOPATH/bin
+
+
+Add these lines to your ~/.bashrc:
+
+source ~/.bashrc
+
+5. Verify Go Version
+
+go version
+
+
+
+
+
+Clone the Repository:
+
+git clone https://github.com/ipfs/ipfs-cluster.git $GOPATH/src/github.com/ipfs/ipfs-cluster
+Navigate to the Directory:
+
+
+cd $GOPATH/src/github.com/ipfs/ipfs-cluster
+Build and Install:
+
+nano /home/ubuntu/gopath/src/github.com/ipfs/ipfs-cluster/go.mod
+remove toolchain go1.20
+and set correct version
+make install
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+Step 1: Generate CLUSTER_SECRET on Node0
+
+export CLUSTER_SECRET=$(od -vN 32 -An -tx1 /dev/urandom | tr -d ' \n')
+echo $CLUSTER_SECRET
+
+
+2. Add CLUSTER_SECRET to the .bashrc file:
+
+echo "export CLUSTER_SECRET=$CLUSTER_SECRET" >> ~/.bashrc
+source ~/.bashrc
+
+
+Step 2: Init and Start IPFS-Cluster on Node0
+
+ipfs daemon &
+ipfs-cluster-service init
+
+
+3. Start the IPFS-Cluster service:
+
+ipfs-cluster-service daemon 
+
+
+Step 3: Set Up Node1
+
+echo "export CLUSTER_SECRET=<your_cluster_secret_from_node0>" >> ~/.bashrc
+source ~/.bashrc
+
+
+ipfs daemon &
+
+4. Initialize the IPFS-Cluster peer:
+
+ipfs-cluster-service init
+
+
+
+5. Start the IPFS-Cluster service and bootstrap to Node0:
+
+Replace <Node0_IP> and <Node0_Peer_ID> with the appropriate values.
+
+
+ipfs-cluster-service daemon --bootstrap /ip4/<Node0_IP>/tcp/9096/ipfs/<Node0_Peer_ID> &
+ /ip4/172.31.3.224/tcp/9096/p2p/12D3KooWMHKdRNUzt1VYaJ1KBof9vMqVJqGwQ7Hswh31Ci8m5ZEi
+to run this on node 
+ipfs-cluster-service daemon --bootstrap  /ip4/172.31.3.224/tcp/9096/p2p/12D3KooWMHKdRNUzt1VYaJ1KBof9vMqVJqGwQ7Hswh31Ci8m5ZEi
+
+
+
+Step 4: Verify Cluster Peers
+
+ipfs-cluster-ctl peers ls
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+Step 4: Run IPFS-Cluster Daemon as a Service
+
+sudo nano /etc/systemd/system/ipfs-cluster.service
+
+
+[Unit]
+Description=IPFS-Cluster Daemon
+Requires=ipfs
+After=syslog.target network.target remote-fs.target nss-lookup.target ipfs
+
+[Service]
+Type=simple
+ExecStart=/home/ubuntu/gopath/bin/ipfs-cluster-service daemon
+User=ubuntu
+
+[Install]
+WantedBy=multi-user.target
+
+
+
+
+Reload the systemd daemon to apply the new service:
+
+
+sudo systemctl daemon-reload
+
+sudo systemctl enable ipfs-cluster
+
+
+sudo systemctl start ipfs-cluster
+
+sudo systemctl status ipfs-cluster
+
+
+verify adding file
+
+ipfs-cluster-ctl add myfile.txt 
+ipfs-cluster-ctl status CID
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+#Install IPFS
+
+ wget https://dist.ipfs.tech/kubo/v0.29.0/kubo_v0.29.0_linux-amd64.tar.gz
+ tar -xvzf kubo_v0.29.0_linux-amd64.tar.gz
+ sudo mv kubo/ipfs /usr/local/bin/
+
+ ipfs init
+ ipfs id
+ ipfs daemon
+
+#if they ask migration enter yes
+
+
+Step 3: Creating a Private Network
+Install the swarm key generation utility (only on Node0):
+
+sudo apt update
+sudo apt install golang-go
+
+nano ~/.bashrc
+
+export GOPATH=$HOME/go
+export PATH=$PATH:$GOPATH/bin
+export PATH=$PATH:/usr/local/go/bin
+
+source ~/.bashrc
+go install github.com/Kubuxu/go-ipfs-swarm-key-gen/ipfs-swarm-key-gen@latest
+
+
+Generate the swarm.key file on Node0:
+
+ipfs-swarm-key-gen > ~/.ipfs/swarm.key
+
+Copy the swarm.key file to the IPFS directory of each node.
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+Remove default bootstrap nodes from each node:
+
+ipfs bootstrap rm --all
+
+
+
+ipfs bootstrap list
+ipfs swarm peers
+
+
+Add Node0 as a bootstrap node on each other node:
+
+On each of the other nodes, run:
+ipfs id
+
+ipfs bootstrap add /ip4/<Node0_IP_Address>/tcp/4001/ipfs/<Node0_Peer_ID>
+
+ipfs bootstrap add /ip4/65.2.71.209/tcp/4001/ipfs/
+
+ipfs bootstrap add /ip4/node-1.ipfs.print2block.com/tcp/4001/ipfs/
+
+ipfs bootstrap add /dns4/node-1.ipfs.print2block.com/tcp/4001/ipfs/12D3KooWSVPfnvUBBGYahQwL3rCBGN7vq49Fuh5rNZVohB9hbuNx
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+3. Set the Environment Variable to Force Private Network Mode
+To ensure that IPFS operates in private mode, set the following environment variable:
+
+
+export LIBP2P_FORCE_PNET=1
+
+echo 'export LIBP2P_FORCE_PNET=1' >> ~/.bashrc
+source ~/.bashrc
+
+
+
+3. Testing the Setup
+3.1. Add a file on Node 0
+
+
+mkdir -p test-files
+echo "hello IPFS" > test-files/file.txt
+ipfs add test-files/file.txt
+Note the hash (CID) returned after adding the file.
+
+
+
+IPFS CLUSTER service
+https://dist.ipfs.tech/#go-ipfs
+
+wget https://dist.ipfs.tech/ipfs-cluster-service/v1.1.1/ipfs-cluster-service_v1.1.1_linux-amd64.tar.gz
+
+tar -xvzf ipfs-cluster-service_v1.1.1_linux-amd64.tar.gz
+
+ sudo mv ipfs-cluster-service/ipfs-cluster-service /usr/local/bin/
+
+
+IPFS CLUSTER CTL
+
+wget https://dist.ipfs.tech/ipfs-cluster-ctl/v1.1.1/ipfs-cluster-ctl_v1.1.1_linux-amd64.tar.gz
+
+ tar -xvzf ipfs-cluster-ctl_v1.1.1_linux-amd64.tar.gz
+
+ sudo mv ipfs-cluster-ctl/ipfs-cluster-ctl /usr/local/bin/
+
+
+
+
+Step 1: Generate CLUSTER_SECRET on Node0
+
+export CLUSTER_SECRET=$(od -vN 32 -An -tx1 /dev/urandom | tr -d ' \n')
+echo $CLUSTER_SECRET
+
+
+2. Add CLUSTER_SECRET to the .bashrc file:
+
+echo "export CLUSTER_SECRET=$CLUSTER_SECRET" >> ~/.bashrc
+source ~/.bashrc
+
+
+Step 2: Init and Start IPFS-Cluster on Node0
+
+ipfs daemon &
+ipfs-cluster-service init
+
+
+3. Start the IPFS-Cluster service:
+
+ipfs-cluster-service daemon 
+
+
+Step 3: Set Up Node1
+
+echo "export CLUSTER_SECRET=<your_cluster_secret_from_node0>" >> ~/.bashrc
+source ~/.bashrc
+
+
+ipfs daemon &
+
+4. Initialize the IPFS-Cluster peer:
+
+ipfs-cluster-service init
+
+
+
+5. Start the IPFS-Cluster service and bootstrap to Node0:
+
+ipfs-cluster-service daemon --bootstrap /ip4/<Node0_IP>/tcp/9096/ipfs/<Node0_Peer_ID> &
+ /ip4/172.31.3.224/tcp/9096/p2p/12D3KooWMHKdRNUzt1VYaJ1KBof9vMqVJqGwQ7Hswh31Ci8m5ZEi
+to run this on node 
+ipfs-cluster-service daemon --bootstrap  /ip4/172.31.3.224/tcp/9096/p2p/12D3KooWMHKdRNUzt1VYaJ1KBof9vMqVJqGwQ7Hswh31Ci8m5ZEi
+
+
+
+Step 4: Verify Cluster Peers
+
+ipfs-cluster-ctl peers ls
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+

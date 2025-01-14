@@ -1,0 +1,325 @@
+
+
+
+
+
+SET VOLUMES
+-----------------------------------------------------------------------------------
+
+volumes:
+      - $HOME/print2block/mongo/db:/data/db
+      - $HOME/print2block/mongo/temp:/temp/mongo
+      - $HOME/print2block/mongo/ssl/db-root-ca.crt:/etc/mongo/ssl/ca.crt
+      - $HOME/print2block/mongo/ssl/node-0.mongocuster.print2block.com.pem:/etc/mongo/ssl/ssl.pem
+      - $HOME/print2block/mongo/mongod-standalone.conf:/etc/mongo/mongod.conf
+
+
+-----------------------------------------------------------------------------------------------
+
+
+
+Step 1 :  Install MongoDB:
+
+	  sudo apt update
+          sudo apt install -y mongodb
+
+
+Step 2 :  Create Configuration Files:
+
+
+	sudo mkdir -p /etc/mongodb/rs1 /etc/mongodb/rs2 /etc/mongodb/rs3
+
+
+Step 3 :  Create configuration files
+
+
+	sudo nano /etc/mongodb/rs1/mongod.conf
+        sudo nano /etc/mongodb/rs2/mongod.conf
+	sudo nano /etc/mongodb/rs3/mongod.conf
+
+
+
+	systemLog:
+  destination: file
+  path: /var/log/mongodb/rs1.log
+  logAppend: true
+storage:
+  dbPath: /var/lib/mongodb/rs1
+net:
+  bindIp: 127.0.0.1
+  port: 27017
+replication:
+  replSetName: rs0
+
+
+In configuration files change the port only in rs2,rs3
+
+
+Step 5 :  Create Data Directories:
+
+
+	sudo mkdir -p /var/lib/mongodb/rs1 /var/lib/mongodb/rs2 /var/lib/mongodb/rs3
+
+
+Step 6 : Ensure MongoDB has the right permissions:
+
+
+	sudo chown -R mongodb:mongodb /var/lib/mongodb
+  	sudo chown -R mongodb:mongodb /var/log/mongodb
+
+	
+Step 7 :  Start MongoDB Instances:
+
+	sudo mongod --config /etc/mongodb/rs1/mongod.conf --fork
+	sudo mongod --config /etc/mongodb/rs2/mongod.conf --fork
+	sudo mongod --config /etc/mongodb/rs3/mongod.conf --fork
+
+
+Step 8 :  Initialize the Replica Set:
+
+open the shell ------> mongo --port 27017
+
+And Initiate this
+
+
+rs.initiate({
+  _id: "rs0",
+  members: [
+    { _id: 0, host: "127.0.0.1:27017" },
+    { _id: 1, host: "127.0.0.1:27018" },
+    { _id: 2, host: "127.0.0.1:27019" }
+  ]
+})
+
+
+
+after check status ---- rs.status()
+
+In dot env file use like this 
+
+MONGO_URL=mongodb://127.0.0.1:27020,127.0.0.1:27018,127.0.0.1:27019/?replicaSet=rs0
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+MONGODB REPLICASET FOR DOCKER
+
+Create Docker Containers for MongoDB Instances
+
+  	sudo docker run -d --name mongo1 --network apps --network-alias mongo1 -p 11000:27017 mongo:4.4 --replSet rs0 --bind_ip localhost,mongo1
+
+	sudo docker run -d --name mongo2 --network apps --network-alias mongo2 -p 11001:27017 mongo:4.4 --replSet rs0 --bind_ip localhost,mongo2
+
+	sudo docker run -d --name mongo3 --network apps --network-alias mongo3 -p 11002:27017 mongo:4.4 --replSet rs0 --bind_ip localhost,mongo3
+
+
+
+Initiate the Replica Set
+
+
+	# Access the mongo shell on the first container
+	sudo docker exec -it mongo1 mongo
+
+	# In the mongo shell, initiate the replica set
+
+rs.initiate({
+  _id: "rs0",
+  members: [
+    { _id: 0, host: "mongo1:27017" },
+    { _id: 1, host: "mongo2:27017" },
+    { _id: 2, host: "mongo3:27017" }
+  ]
+})
+
+
+Verify Replica Set Configuration
+
+rs.status()
+
+
+Use in .env file 
+
+MONGO_URL=mongodb://mongo1:27017,mongo2:27017,mongo3:27017/?replicaSet=rs0
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+TO CREATE A REPLICASET IN MONGODB FOR DIFFERENT INSTANCES
+
+** Firstly launch a docker in all three of the instances using tis command
+
+sudo docker run -d --name mongo1 -p 27017:27017 mongo:4.4 --replSet rs0 --bind_ip_all
+
+sudo docker run -d --name mongo2 -p 27017:27017 mongo:4.4 --replSet rs0 --bind_ip_all
+
+sudo docker run -d --name mongo3 -p 27017:27017 mongo:4.4 --replSet rs0 --bind_ip_all
+
+
+Initiate the Replica Set Connect to the first MongoDB container on Instance 1:
+
+	sudo docker exec -it mongo1 mongo
+
+Initiate the replica set within the MongoDB shell:
+
+rs.initiate({
+  _id: "rs0",
+  members: [
+    { _id: 0, host: "192.168.1.101:27017" },
+    { _id: 1, host: "192.168.1.102:27017" },
+    { _id: 2, host: "192.168.1.103:27017" }
+  ]
+})
+
+rs.status()
+
+
+In dot env file use like this
+
+	MONGO_URL=mongodb://192.168.1.101:27017,192.168.1.102:27017,192.168.1.103:27017/?replicaSet=rs0
+
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+TO DEPLOY THE REPLICA SET IN MONGODB FOR DIFFERENT INSTANCES  IN DOCKER SWARM MODE
+----------------------------------------------------------------------------------
+
+
+Step 1 :  First run a command in "docker swarm init" ----- This node is a manager --- after that you get a token 
+
+Step 2 :  And use this token to run the another two instances as a worker
+
+Step 3 :  Create Configuration Files on Each Instance
+
+		sudo mkdir -p /arun/mongodb/
+		sudo nano /arun/mongodb/mongod.conf
+
+------------------------------
+
+storage:
+  dbPath: /data/db
+  journal:
+    enabled: true
+
+systemLog:
+  destination: file
+  logAppend: true
+  path: /var/log/mongodb/mongod.log
+
+net:
+  bindIp: 0.0.0.0
+  port: 27017
+
+replication:
+  replSetName: rs0
+
+-----------------------------------
+
+
+Step 4 :  Create Database Directories:
+
+		sudo mkdir -p /data/db
+		sudo chown -R 999:999 /data/db
+
+
+Step 5 : Set Up Docker Compose File:
+
+---------------------------------
+
+/etc/mongodb/mongod.conf:/etc/mongod.conf
+           |			|
+	   |			|
+	   |			|
+       host path	  Container path
+
+
+version: "3.9"
+
+networks:
+  appnet:
+    external: true
+    name: apps1
+
+services:
+  mongo1:
+    image: mongo:4.4
+    command: --config /etc/mongod.conf
+    volumes:
+      - /etc/mongodb/mongod.conf:/etc/mongod.conf
+      - /data/db:/data/db
+    networks:
+      appnet:
+        aliases:
+          - mongo1
+    ports:
+      - "27017:27017"
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+
+  mongo2:
+    image: mongo:4.4
+    command: --config /etc/mongod.conf
+    volumes:
+      - /etc/mongodb/mongod.conf:/etc/mongod.conf
+      - /data/db:/data/db
+    networks:
+      appnet:
+        aliases:
+          - mongo2
+    ports:
+      - "27018:27017"
+    deploy:
+      placement:
+        constraints:
+          - node.role == worker
+
+  mongo3:
+    image: mongo:4.4
+    command: --config /etc/mongod.conf
+    volumes:
+      - /etc/mongodb/mongod.conf:/etc/mongod.conf
+      - /data/db:/data/db
+    networks:
+      appnet:
+        aliases:
+          - mongo3
+    ports:
+      - "27019:27017"
+    deploy:
+      placement:
+        constraints:
+          - node.role == worker
+-----------------------------------------------------------
+
+
+Step 6 :  Deploy the Stack
+
+	docker stack deploy -c docker-compose.yml mongo_cluster
+
+
+step 7 :  Initiate the Replica Set
+
+		docker exec -it $(docker ps -q -f name=mongo_cluster_mongo1) mongo
+
+	rs.initiate({
+  _id: "rs0",
+  members: [
+    { _id: 0, host: "mongo1:27017" },
+    { _id: 1, host: "mongo2:27017" },
+    { _id: 2, host: "mongo3:27017" }
+  ]
+})
+
+
+secondaryOk 
+
+
+ 
+          
