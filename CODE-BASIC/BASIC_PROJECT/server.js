@@ -8,7 +8,9 @@ const app = express()
 const port = process.env.PORT || 3000
 
 app.use(express.json())
-
+app.get('/', (req, res) => {
+  res.json({ message: 'Hello from Node.js' });
+});
 // Routes
 app.post("/users", async (req, res) => {
   try {
@@ -40,7 +42,7 @@ const home = async () => {
       throw "Failed to connect to MongoDB"
     }
     // Start the server
-    app.listen(port, () => {
+    app.listen(port,"0.0.0.0", () => {
       console.log(`Server is running on port ${port}`)
     })
   } catch (error) {

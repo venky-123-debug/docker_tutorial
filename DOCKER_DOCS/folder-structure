@@ -1,0 +1,19 @@
+/node-mongo-nginx
+│
+├── /app                    # Node.js app source code and Dockerfile
+│   ├── Dockerfile           # Your Node.js app Dockerfile
+│   ├── package.json         # Your Node.js app package.json
+│   ├── .env                # Environment variables for Node.js (including MONGODB_URL)
+│   ├── app.js               # Your Node.js app entry point
+│   └── /logs                # Directory for storing Node.js logs (mounted as a volume)
+│
+├── /nginx                   # NGINX configuration and static files
+│   ├── default.conf         # NGINX configuration (default.conf)
+│   ├── /public              # Directory for static files served by NGINX (mounted as a volume)
+│   └── /logs                # Directory for storing NGINX logs (mounted as a volume)
+│
+├── /mongo                   # MongoDB data
+│   └── /data                # Directory for MongoDB data (mounted as a volume)
+│
+├── docker-compose.yml       # Docker Compose file
+└── .env                     # Environment variables for Docker Compose (e.g., PORT, MONGODB_URL)

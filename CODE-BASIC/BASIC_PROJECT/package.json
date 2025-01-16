@@ -4,7 +4,9 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "build": "ncc build server.js -o dist",
+    "package": "pkg -t node18-linux --compress -GZip -o server-pkg dist/index.js"
   },
   "author": "",
   "license": "ISC",
