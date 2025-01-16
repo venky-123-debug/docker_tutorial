@@ -2,22 +2,21 @@ version: "3.9"
 
 networks:
   p2b-network-1:
-    name: p2b-network-1
+    driver: bridge  # Using bridge instead of overlay for local development
 
 services:
   nginx:
     container_name: nginx
     image: nginx:latest
     volumes:
-      - ./nginx/public:/usr/share/nginx/html
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - /home/ubuntu/public/nginx.conf:/etc/nginx/conf.d/default.conf
       - nginx_logs:/var/log/nginx  # Store logs from NGINX
     ports:
-      - "80:80"  # Expose port 80
+      - "80:80"  # Expose port 80 to the outside world
     networks:
       - p2b-network-1
-    deploy:
-      mode: global
+    depends_on:
+      - nodejs-app
     restart: always
 
   mongo:
@@ -33,14 +32,14 @@ services:
   nodejs-app:
     container_name: nodejs-app
     build:
-      context: ./app  # Points to the app directory
+      context: /home/ubuntu/public  # Local path to the app directory
       dockerfile: Dockerfile
     ports:
-      - "${PORT}:${PORT}"  # Use PORT from the .env file
+      - "3000:3000"  # Expose port 3000 (Node.js app)
     env_file:
-      - ./app/.env         # Use the app-specific .env file
+      - /home/ubuntu/public/.env  # Use the app-specific .env file
     volumes:
-      - nodejs_logs:/app/logs  # Logs directory
+      - nodejs_logs:/usr/src/app/logs  # Logs directory
     depends_on:
       - mongo
     networks:
