@@ -68,7 +68,8 @@ sudo docker service create \
   --mount type=volume,source=registry-data,target=/var/lib/registry \
   registry:2
 
-#####################################################################################################################
+    # step 1.1 To add custom name to node 
+    docker node update --label-add custom-name=worker-1 ip-172-31-7-224 # It doesnot appear on list of "docker node ls"
 
 # Step 2: Navigate to your Node.js application directory
 cd /path/to/your/nodejs-app  < Node.js app directory path >
