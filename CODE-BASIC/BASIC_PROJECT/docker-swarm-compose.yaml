@@ -1,7 +1,7 @@
 version: "3.9"
 
 networks:
-  p2b-network-1:
+  apps:
     driver: overlay  # Overlay network for Docker Swarm (supports multi-node clusters)
 
 services:
@@ -14,7 +14,7 @@ services:
     ports:
       - "80:80"  # Expose port 80 to the outside world
     networks:
-      - p2b-network-1
+      - apps
     depends_on:
       - nodejs-app
     deploy:
@@ -29,7 +29,7 @@ services:
     ports:
       - "27017:27017"  # Expose MongoDB port
     networks:
-      - p2b-network-1
+      - apps
     volumes:
       - mongo_data:/data/db  # Persist MongoDB data
     deploy:
@@ -38,26 +38,26 @@ services:
         condition: any
     restart: always
 
-  nodejs-app:
-    container_name: nodejs-app
-    build:
-      context: /home/ubuntu/public  # Local path to the app directory
-      dockerfile: Dockerfile  # Path to the Dockerfile
-    ports:
-      - "3000:3000"  # Expose port 3000 (Node.js app)
-    env_file:
-      - /home/ubuntu/public/.env  # Use the app-specific .env file
-    volumes:
-      - nodejs_logs:/usr/src/app/logs  # Logs directory
-    depends_on:
-      - mongo
-    networks:
-      - p2b-network-1
-    deploy:
-      replicas: 3  # Run 3 instances of the Node.js app for high availability and load balancing
-      restart_policy:
-        condition: any
-    restart: always
+  # nodejs-app:
+  #   container_name: nodejs-app
+  #   build:
+  #     context: /home/ubuntu/public  # Local path to the app directory
+  #     dockerfile: Dockerfile  # Path to the Dockerfile
+  #   ports:
+  #     - "3000:3000"  # Expose port 3000 (Node.js app)
+  #   env_file:
+  #     - /home/ubuntu/public/.env  # Use the app-specific .env file
+  #   volumes:
+  #     - nodejs_logs:/usr/src/app/logs  # Logs directory
+  #   depends_on:
+  #     - mongo
+  #   networks:
+  #     - apps
+  #   deploy:
+  #     replicas: 3  # Run 3 instances of the Node.js app for high availability and load balancing
+  #     restart_policy:
+  #       condition: any
+  #   restart: always
 
 volumes:
   nodejs_logs:
